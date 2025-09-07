@@ -10,7 +10,7 @@ const app = express();
 
 // CORS setup: allow React frontend
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://health-planner-frontend-2yyfs6wrl-asif26679s-projects.vercel.app/",
   credentials: true,
 };
 app.use(cors(corsOptions));
