@@ -9,10 +9,23 @@ connectDB();
 const app = express();
 
 // CORS setup: allow React frontend
+const allowedOrigins = [
+  "https://health-planner-frontend-2yyfs6wrl-asif26679s-projects.vercel.app",
+  "https://health-planner-frontend-w1t117gho-asif26679s-projects.vercel.app",
+  "http://localhost:5173", // local dev
+];
+
 const corsOptions = {
-  origin: "https://health-planner-frontend-2yyfs6wrl-asif26679s-projects.vercel.app",
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 };
+
 app.use(cors(corsOptions));
 
 app.use(express.json());
