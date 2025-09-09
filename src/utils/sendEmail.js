@@ -1,4 +1,3 @@
-// src/lib/sendEmail.js
 import * as brevo from "@getbrevo/brevo";
 import dotenv from "dotenv";
 
@@ -13,17 +12,22 @@ client.setApiKey(
 export const sendEmail = async (to, subject, html) => {
   try {
     const sendSmtpEmail = {
-      sender: { name: "Health Planner", email: "asif26679@gmail.com" },\
+      sender: { name: "Health Planner", email: process.env.BREVO_SENDER_EMAIL },
       to: [{ email: to }],
       subject,
       htmlContent: html,
     };
 
     const data = await client.sendTransacEmail(sendSmtpEmail);
-    console.log("✅ Email sent successfully:", data.messageId);
+
+    console.log("✅ Email sent successfully:", data.messageId || data);
+
     return data;
   } catch (error) {
-    console.error("❌ Email sending failed:", error.response?.body || error.message);
+    console.error(
+      "❌ Email sending failed:",
+      error.response?.body || error.message
+    );
     throw error;
   }
 };
