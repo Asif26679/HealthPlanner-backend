@@ -11,7 +11,6 @@ export const signupUser = async (req, res) => {
   if (!name || !username || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
-
   try {
     // Check if user exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -105,27 +104,36 @@ export const resendOtp = async (req, res) => {
 // LOGIN
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
+
+  if (!email || !password) {
     return res.status(400).json({ success: false, message: "Please provide email and password" });
+  }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ success: false, message: "User not found" });
-    if (!user.otp.verified) return res.status(401).json({ success: false, message: "Please verify your OTP before logging in" });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (!user.otp?.verified) {
+      return res.status(401).json({ success: false, message: "Please verify your OTP before logging in" });
+    }
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) return res.status(400).json({ success: false, message: "Invalid password" });
 
+    const token = generateToken(user._id);
+
     res.status(200).json({
-      token: generateToken(user._id),
+      token,
       user: { id: user._id, name: user.name, email: user.email },
       success: true,
-      message: "Login Successful"
+      message: "Login Successful",
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Login error:", err); // Log detailed error for production debugging
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 
