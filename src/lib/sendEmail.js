@@ -3,13 +3,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const client = new brevo.TransactionalEmailsApi();
-client.setApiKey(
+// Declare only ONCE
+const brevoClient = new brevo.TransactionalEmailsApi();
+brevoClient.setApiKey(
   brevo.TransactionalEmailsApiApiKeys.apiKey,
   process.env.BREVO_API_KEY
 );
 
-export const sendEmail = async (to, subject, html) => {
+export const sendMail = async (to, subject, html) => {
   try {
     const sendSmtpEmail = {
       sender: { name: "Health Planner", email: process.env.BREVO_SENDER_EMAIL },
@@ -18,7 +19,7 @@ export const sendEmail = async (to, subject, html) => {
       htmlContent: html,
     };
 
-    const data = await client.sendTransacEmail(sendSmtpEmail);
+    const result = await brevoClient.sendTransacEmail(sendSmtpEmail);
 
     console.log("✅ Email sent successfully:", data.messageId || data);
 
