@@ -1,7 +1,7 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs"
-import { sendEmail } from "../lib/sendEmail.js";
+import { sendMail } from "../lib/sendEmail.js";
 // Generate JWT
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
@@ -28,7 +28,7 @@ export const signupUser = async (req, res) => {
     });
 
     // Send OTP email
-    await sendEmail(
+    await sendMail(
       email,
       "Verify your OTP",
       `<p>Hello ${name},</p><p>Your OTP is <strong>${otpCode}</strong></p>`
@@ -77,7 +77,7 @@ export const resendOtp = async (req, res) => {
     user.otp.expires = otpExpiry;
     await user.save();
 
-    await sendEmail(
+    await sendMail(
       email,
       "Resend OTP",
       `<p>Hello ${user.name},</p><p>Your new OTP code is <strong>${otpCode}</strong></p>`
