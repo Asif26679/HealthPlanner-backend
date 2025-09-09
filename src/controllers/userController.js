@@ -67,6 +67,7 @@ export const verifySignupOtp = async (req, res) => {
     username: tempUser.username,
     email: tempUser.email,
     password: tempUser.password,
+    otp: { verified: true },
   });
 
   // Remove from temp storage
