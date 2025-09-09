@@ -20,17 +20,14 @@ const userSchema = mongoose.Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt); // <-- FIXED
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 // Compare password during login
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  const result = await bcrypt.compare(enteredPassword, this.password);
-  console.log("Entered:", enteredPassword, "Stored hash:", this.password, "Match:", result);
-  return result;
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
 const User = mongoose.model("User", userSchema);
-
 export default User;
