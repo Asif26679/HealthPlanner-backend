@@ -1,25 +1,25 @@
-import { Resend } from "resend";
+// src/lib/sendEmail.js
+import * as brevo from "@getbrevo/brevo";
 import dotenv from "dotenv";
 dotenv.config();
 
-console.log("RESEND_API_KEY:", process.env.RESEND_API_KEY); // should print your key
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const client = new brevo.TransactionalEmailsApi();
+client.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
 export const sendEmail = async (to, subject, html) => {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Website <website@resend.dev>",
-      to: [to],
+    const sendSmtpEmail = {
+      sender: { name: "Health Planner", email: "your_verified_email@brevo.com" },
+      to: [{ email: to }],
       subject,
-      html,
-    });
-    if (error) {
-      console.error({ error });
-    } else {
-      console.log(data);
-    }
-  } catch (err) {
-    console.error(err);
+      htmlContent: html,
+    };
+
+    const data = await client.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email sent:", data.messageId);
+    return data;
+  } catch (error) {
+    console.error("❌ Email error:", error.response?.body || error.message);
+    throw error;
   }
 };

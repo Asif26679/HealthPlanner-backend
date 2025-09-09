@@ -1,7 +1,7 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs"
-import { sendEmail } from "../lib/sendEmail.js";
+import { sendEmail } from "../lib/sendemail.js";
 // Generate JWT
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
