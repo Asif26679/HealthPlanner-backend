@@ -1,3 +1,4 @@
+// backend/controllers/chatController.js
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 
@@ -8,33 +9,40 @@ export const chatWithAI = async (req, res) => {
     const { messages } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "Messages are required and must be an array." });
+      return res.status(400).json({
+        error: "Messages are required and must be an array.",
+      });
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-70b-versatile", // या कोई और Groq model
-        messages: messages.map(m => ({
-          role: m.role,
-          content: m.content,
-        })),
-      }),
-    });
+    // User ka last message lo
+    const userMessage = messages[messages.length - 1].content;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.OPENAI_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: userMessage }],
+            },
+          ],
+        }),
+      }
+    );
 
     const data = await response.json();
-    console.log("Groq Response:", data);
 
     if (data.error) {
-      return res.status(400).json({ error: data.error.message });
+      return res.status(400).json(data.error);
     }
 
-    const aiMessage = data.choices?.[0]?.message?.content || "No response";
-    res.json({ reply: aiMessage });
+    res.json({
+      reply: data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response",
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "AI unavailable" });
