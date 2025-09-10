@@ -41,6 +41,10 @@ const dietSchema = new Schema({
     type: Number,
     default: 0,
   },
+totalProtein: { type: Number, default: 0 },
+totalCarbs: { type: Number, default: 0 },
+totalFats: { type: Number, default: 0 }
+
 }, { timestamps: true });
 
 const Diet = mongoose.model("Diet", dietSchema);
