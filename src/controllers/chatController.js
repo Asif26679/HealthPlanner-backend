@@ -23,6 +23,7 @@ export const chatWithAI = async (req, res) => {
     });
 
     const data = await response.json();
+    console.log(data)
     res.json(data);
   } catch (err) {
     console.error(err.message);
