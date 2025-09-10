@@ -40,7 +40,7 @@ import dietRoutes from './src/routes/dietRoute.js'
 import chatRoutes from './src/routes/chatRoute.js'
 import waterRoutes from "./src/routes/waterRoute.js";
 app.use("/api/water", waterRoutes);
-app.use('/api/dites',dietRoutes)
+app.use('/api/diets',dietRoutes)
 app.use("/api/users", userRoutes);
 app.use("/api", chatRoutes);
 app.get("/", (req, res) => res.send("API Running"));
