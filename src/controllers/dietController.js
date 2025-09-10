@@ -1,6 +1,7 @@
-import Diet from '../models/dietModel.js';
+import Diet from "../models/dietModel.js";
+import { foods } from "../utils/foodData.js";
 
-// Helper to calculate total macros
+// Helper to calculate totals
 const calculateTotals = (meals) => {
   return meals.reduce(
     (totals, meal) => {
@@ -14,117 +15,81 @@ const calculateTotals = (meals) => {
   );
 };
 
-// Create a new diet plan
-export const createDiet = async (req, res) => {
-  const { title, meals } = req.body;
-  try {
-    const totals = calculateTotals(meals);
+// Helper to pick random foods for a meal
+const pickFoodsForMeal = (targetCalories) => {
+  const mealFoods = [];
+  let remainingCalories = targetCalories;
 
-    const diet = await Diet.create({
-      user: req.user._id,
-      title,
-      meals,
-      totalCalories: totals.totalCalories,
-    });
-
-    res.status(200).json({
-      ...diet.toObject(),
-      totalProtein: totals.totalProtein,
-      totalCarbs: totals.totalCarbs,
-      totalFats: totals.totalFats,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(400).json({ success: false, message: "Can't create diet" });
+  while (remainingCalories > 50) {
+    const randomFood = foods[Math.floor(Math.random() * foods.length)];
+    if (randomFood.calories <= remainingCalories) {
+      mealFoods.push(randomFood);
+      remainingCalories -= randomFood.calories;
+    } else {
+      break;
+    }
   }
+
+  return mealFoods;
 };
 
-// Get all diets for logged-in user
-export const getMyDiet = async (req, res) => {
+// Auto-generate diet
+export const generateDiet = async (req, res) => {
   try {
-    const diets = await Diet.find({ user: req.user._id });
-    const dietsWithTotals = diets.map((diet) => {
-      const totals = calculateTotals(diet.meals);
+    const { age, weight, height, gender, activityLevel } = req.body;
+
+    if (!age || !weight || !height || !gender || !activityLevel) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // 1️⃣ Calculate BMR
+    let bmr;
+    if (gender === "male") {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    // 2️⃣ Adjust for activity
+    const activityMultiplier = {
+      sedentary: 1.2,
+      lightly: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      very: 1.9,
+    };
+    const calories = Math.round(bmr * (activityMultiplier[activityLevel] || 1.2));
+
+    // 3️⃣ Split calories into 4 meals
+    const mealCalories = Math.floor(calories / 4);
+    const mealNames = ["Breakfast", "Lunch", "Snack", "Dinner"];
+    const meals = mealNames.map((name) => {
+      const selectedFoods = pickFoodsForMeal(mealCalories);
+      const totals = calculateTotals(selectedFoods);
       return {
-        ...diet.toObject(),
-        totalProtein: totals.totalProtein,
-        totalCarbs: totals.totalCarbs,
-        totalFats: totals.totalFats,
+        name,
+        calories: totals.totalCalories,
+        protein: totals.totalProtein,
+        carbs: totals.totalCarbs,
+        fats: totals.totalFats,
+        foods: selectedFoods, // store actual food items
       };
     });
-    res.json(dietsWithTotals);
-  } catch (error) {
-    console.error(error);
-    return res.status(400).json({ success: false, message: "Can't get user diet" });
-  }
-};
 
-// Get a single diet by ID
-export const getDietById = async (req, res) => {
-  try {
-    const diet = await Diet.findById(req.params.id);
-    if (!diet) return res.status(404).json({ message: "Diet Not Found!!!" });
-
-    if (diet.user.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
-    const totals = calculateTotals(diet.meals);
-
-    res.json({
-      ...diet.toObject(),
-      totalProtein: totals.totalProtein,
-      totalCarbs: totals.totalCarbs,
-      totalFats: totals.totalFats,
+    // 4️⃣ Save to database
+    const diet = await Diet.create({
+      user: req.user._id,
+      title: `Auto-Generated Diet (${new Date().toLocaleDateString()})`,
+      meals,
+      totalCalories: calories,
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(400).json({ success: false, message: "Cannot get diet by id" });
-  }
-};
-
-// Update the diet
-export const updateDiet = async (req, res) => {
-  const { id } = req.params;
-  const { title, meals } = req.body;
-  try {
-    const diet = await Diet.findOne({ _id: id, user: req.user._id });
-    if (!diet) return res.status(404).json({ success: false, message: "Diet not found" });
-
-    diet.title = title || diet.title;
-    diet.meals = meals || diet.meals;
-
-    const totals = calculateTotals(diet.meals);
-    diet.totalCalories = totals.totalCalories;
-
-    const updatedDiet = await diet.save();
 
     res.status(200).json({
-      ...updatedDiet.toObject(),
-      totalProtein: totals.totalProtein,
-      totalCarbs: totals.totalCarbs,
-      totalFats: totals.totalFats,
+      ...diet.toObject(),
+      ...calculateTotals(meals),
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ success: false, message: "Can't update diet" });
-  }
-};
-
-// Delete Diet
-export const deleteDiet = async (req, res) => {
-  try {
-    const diet = await Diet.findById(req.params.id);
-    if (!diet) return res.status(404).json({ message: "Diet not found" });
-
-    if (diet.user.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
-    await diet.deleteOne();
-    res.json({ message: "Diet deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: "Can't delete the diet" });
+    res.status(500).json({ message: "Error generating diet" });
   }
 };
