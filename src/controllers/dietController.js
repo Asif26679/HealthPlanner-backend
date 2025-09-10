@@ -38,7 +38,7 @@ export const generateDiet = async (req, res) => {
   try {
     const { age, weight, height, gender, activityLevel } = req.body;
 
-    if (!age || !weight || !height || !gender || !activityLevel) {
+    if (!age || !weight || !height ||  !activityLevel) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
