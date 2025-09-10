@@ -93,3 +93,13 @@ export const generateDiet = async (req, res) => {
     res.status(500).json({ message: "Error generating diet" });
   }
 };
+
+export const getDiets = async (req, res) => {
+  try {
+    const diets = await Diet.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.status(200).json(diets);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching diets" });
+  }
+};
