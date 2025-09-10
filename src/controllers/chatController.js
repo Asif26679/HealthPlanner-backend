@@ -15,11 +15,8 @@ export const chatWithAI = async (req, res) => {
 
     // User का last message लो
     const userMessage = messages[messages.length - 1].content;
-
-    // Simple self-reply logic
     let reply = "";
 
-    // कुछ custom rules (optional)
     if (userMessage.toLowerCase().includes("hello")) {
       reply = "Hello! How are you?";
     } else if (userMessage.toLowerCase().includes("bye")) {
