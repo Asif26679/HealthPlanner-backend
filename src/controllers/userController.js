@@ -133,14 +133,22 @@ export const loginUser = async (req, res) => {
 
 
 // Get current logged-in user
+import User from "../models/userModel.js"; // adjust path if different
+
 export const getMe = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Not authorized" });
-    return res.status(200).json({ user: req.user });
+
+    // Fetch user from DB to get username, email, etc.
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.status(200).json(user);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 };
+
 
 // Update Name
 export const updateName = async (req, res) => {
