@@ -133,7 +133,7 @@ export const loginUser = async (req, res) => {
 
 
 // Get current logged-in user
-import User from "../models/userModel.js"; // adjust path if different
+
 
 export const getMe = async (req, res) => {
   try {
