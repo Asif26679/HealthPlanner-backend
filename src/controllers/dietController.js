@@ -126,8 +126,28 @@ export const deleteDiet = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+// Generate daily diet
+const calculateMealTotals = (mealFoods) => {
+  return mealFoods.reduce(
+    (totals, food) => {
+      totals.calories += food.calories || 0;
+      totals.protein += food.protein || 0;
+      totals.carbs += food.carbs || 0;
+      totals.fats += food.fats || 0;
+      return totals;
+    },
+    { calories: 0, protein: 0, carbs: 0, fats: 0 }
+  );
+};
+
+// Helper to get random foods for a meal
 const getSuggestedFoods = (mealType, count = 3) => {
-  const filtered = foods.filter(f => f.type === mealType);
+  const filtered = foods.filter(
+    (f) => f.type.toLowerCase() === mealType.toLowerCase()
+  );
+  // Shuffle and pick count foods
   return filtered.sort(() => 0.5 - Math.random()).slice(0, count);
 };
 
@@ -140,18 +160,22 @@ export const generateDiet = async (req, res) => {
     // Optional: delete old diets for the user
     await Diet.deleteMany({ user: req.user._id });
 
-    // Create meals
-    const meals = [
-      { name: "Breakfast", foods: getSuggestedFoods("Breakfast") },
-      { name: "Lunch", foods: getSuggestedFoods("Lunch") },
-      { name: "Dinner", foods: getSuggestedFoods("Dinner") },
-      { name: "Snacks", foods: getSuggestedFoods("Snacks") },
-    ];
+    const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+    const meals = mealTypes.map((mealName) => {
+      const mealFoods = getSuggestedFoods(mealName, 3); // get at least 3 foods
+      const totals = calculateMealTotals(mealFoods);
+      return {
+        name: mealName,
+        foods: mealFoods,
+        calories: totals.calories,
+        protein: totals.protein,
+        carbs: totals.carbs,
+        fats: totals.fats,
+      };
+    });
 
-    // Total calories
-    const totalCalories = meals
-      .flatMap(m => m.foods)
-      .reduce((sum, food) => sum + food.calories, 0);
+    // Total calories of all meals
+    const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
 
     // Create diet object
     const diet = await Diet.create({
@@ -163,7 +187,7 @@ export const generateDiet = async (req, res) => {
 
     res.status(201).json(diet);
   } catch (err) {
-    console.error(err);
+    console.error("Error generating diet:", err);
     res.status(500).json({ message: err.message });
   }
 };
