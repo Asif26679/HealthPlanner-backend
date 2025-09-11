@@ -7,5 +7,5 @@ const router = express.Router();
 // Auto-generate diet
 router.post("/generate", protect, generateDiet);
 router.get("/", protect, getDiets);
-router.delete('/delete',deleteDiet)
+router.delete('/:id',deleteDiet)
 export default router;
