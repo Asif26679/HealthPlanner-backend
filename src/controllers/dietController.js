@@ -104,8 +104,6 @@ export const getDiets = async (req, res) => {
   }
 };
   // Deleted Diet
-// controllers/dietController.js
-import Diet from "../models/dietModel.js";
 
 export const deleteDiet = async (req, res) => {
   try {
