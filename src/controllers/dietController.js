@@ -34,65 +34,65 @@ const pickFoodsForMeal = (targetCalories) => {
 };
 
 // Auto-generate diet
-export const generateDiet = async (req, res) => {
-  try {
-    const { age, weight, height, gender, activityLevel } = req.body;
+// export const generateDiet = async (req, res) => {
+//   try {
+//     const { age, weight, height, gender, activityLevel } = req.body;
 
-    if (!age || !weight || !height ||  !activityLevel) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+//     if (!age || !weight || !height ||  !activityLevel) {
+//       return res.status(400).json({ message: "All fields are required" });
+//     }
 
-    // 1️⃣ Calculate BMR
-    let bmr;
-    if (gender === "male") {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
+//     // 1️⃣ Calculate BMR
+//     let bmr;
+//     if (gender === "male") {
+//       bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+//     } else {
+//       bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+//     }
 
-    // 2️⃣ Adjust for activity
-    const activityMultiplier = {
-      sedentary: 1.2,
-      lightly: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      very: 1.9,
-    };
-    const calories = Math.round(bmr * (activityMultiplier[activityLevel] || 1.2));
+//     // 2️⃣ Adjust for activity
+//     const activityMultiplier = {
+//       sedentary: 1.2,
+//       lightly: 1.375,
+//       moderate: 1.55,
+//       active: 1.725,
+//       very: 1.9,
+//     };
+//     const calories = Math.round(bmr * (activityMultiplier[activityLevel] || 1.2));
 
-    // 3️⃣ Split calories into 4 meals
-    const mealCalories = Math.floor(calories / 4);
-    const mealNames = ["Breakfast", "Lunch", "Snack", "Dinner"];
-    const meals = mealNames.map((name) => {
-      const selectedFoods = pickFoodsForMeal(mealCalories);
-      const totals = calculateTotals(selectedFoods);
-      return {
-        name,
-        calories: totals.totalCalories,
-        protein: totals.totalProtein,
-        carbs: totals.totalCarbs,
-        fats: totals.totalFats,
-        foods: selectedFoods, // store actual food items
-      };
-    });
+//     // 3️⃣ Split calories into 4 meals
+//     const mealCalories = Math.floor(calories / 4);
+//     const mealNames = ["Breakfast", "Lunch", "Snack", "Dinner"];
+//     const meals = mealNames.map((name) => {
+//       const selectedFoods = pickFoodsForMeal(mealCalories);
+//       const totals = calculateTotals(selectedFoods);
+//       return {
+//         name,
+//         calories: totals.totalCalories,
+//         protein: totals.totalProtein,
+//         carbs: totals.totalCarbs,
+//         fats: totals.totalFats,
+//         foods: selectedFoods, // store actual food items
+//       };
+//     });
 
-    // 4️⃣ Save to database
-    const diet = await Diet.create({
-      user: req.user._id,
-      title: `Auto-Generated Diet (${new Date().toLocaleDateString()})`,
-      meals,
-      totalCalories: calories,
-    });
+//     // 4️⃣ Save to database
+//     const diet = await Diet.create({
+//       user: req.user._id,
+//       title: `Auto-Generated Diet (${new Date().toLocaleDateString()})`,
+//       meals,
+//       totalCalories: calories,
+//     });
 
-    res.status(200).json({
-      ...diet.toObject(),
-      ...calculateTotals(meals),
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error generating diet" });
-  }
-};
+//     res.status(200).json({
+//       ...diet.toObject(),
+//       ...calculateTotals(meals),
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Error generating diet" });
+//   }
+// };
 
 export const getDiets = async (req, res) => {
   try {
@@ -124,5 +124,46 @@ export const deleteDiet = async (req, res) => {
   } catch (error) {
     console.error("❌ Delete Diet Error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+const getSuggestedFoods = (mealType, count = 3) => {
+  const filtered = foods.filter(f => f.type === mealType);
+  return filtered.sort(() => 0.5 - Math.random()).slice(0, count);
+};
+
+// Generate daily diet
+export const generateDiet = async (req, res) => {
+  try {
+    const { age, weight, height, gender, activityLevel } = req.body;
+    if (!req.user) return res.status(401).json({ message: "Not authorized" });
+
+    // Optional: delete old diets for the user
+    await Diet.deleteMany({ user: req.user._id });
+
+    // Create meals
+    const meals = [
+      { name: "Breakfast", foods: getSuggestedFoods("Breakfast") },
+      { name: "Lunch", foods: getSuggestedFoods("Lunch") },
+      { name: "Dinner", foods: getSuggestedFoods("Dinner") },
+      { name: "Snacks", foods: getSuggestedFoods("Snacks") },
+    ];
+
+    // Total calories
+    const totalCalories = meals
+      .flatMap(m => m.foods)
+      .reduce((sum, food) => sum + food.calories, 0);
+
+    // Create diet object
+    const diet = await Diet.create({
+      user: req.user._id,
+      title: "Daily Diet Plan",
+      meals,
+      totalCalories,
+    });
+
+    res.status(201).json(diet);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
 };
