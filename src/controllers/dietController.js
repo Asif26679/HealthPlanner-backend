@@ -103,3 +103,24 @@ export const getDiets = async (req, res) => {
     res.status(500).json({ message: "Error fetching diets" });
   }
 };
+  // Deleted Diet
+export const deleteDiet = async (req, res) => {
+  try {
+    const diet = await Diet.findById(req.params.id);
+
+    if (!diet) {
+      return res.status(404).json({ message: "Diet not found" });
+    }
+
+    // Only allow user who created it to delete
+    if (diet.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    await diet.deleteOne();
+    res.json({ message: "Diet deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
