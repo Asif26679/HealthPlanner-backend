@@ -132,54 +132,54 @@ export const loginUser = async (req, res) => {
 };
 
 
-// Get current logged-in user
-
-
 export const getMe = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Not authorized" });
 
-    // Fetch user from DB to get username, email, etc.
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    return res.status(200).json(user);
+    return res.status(200).json({ user });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 };
 
-
+// ========================
 // Update Name
+// ========================
 export const updateName = async (req, res) => {
   try {
-    const userId = req.user._id; // ✅ fixed
+    const userId = req.user._id;
     const { name } = req.body;
 
     if (!name) return res.status(400).json({ message: "Name is required" });
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     user.name = name;
     await user.save();
 
-    res.json({ message: "Name updated successfully", name: user.name });
+    return res.json({
+      message: "Name updated successfully",
+      user, // ✅ return updated user
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+// ========================
 // Change Password
+// ========================
 export const changePassword = async (req, res) => {
   try {
-    const userId = req.user._id; // ✅ fixed
+    const userId = req.user._id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Current and new password are required" });
+      return res.status(400).json({ message: "Current and new password are required" });
     }
 
     const user = await User.findById(userId);
@@ -189,12 +189,18 @@ export const changePassword = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Current password is incorrect" });
 
-    user.password = newPassword; // ✅ will be hashed in pre-save hook
+    user.password = newPassword; // will be hashed in pre-save hook
     await user.save();
 
-    res.json({ message: "Password updated successfully" });
+    // ✅ fetch clean user object without password
+    const safeUser = await User.findById(user._id).select("-password");
+
+    return res.json({
+      message: "Password updated successfully",
+      user: safeUser, // ✅ return updated user
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
