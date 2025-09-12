@@ -1,5 +1,5 @@
 import Diet from "../models/dietModel.js";
-import { foods } from "../utils/foodData.js";
+import foods from "../utils/foodData.js";
 
 // ------------------------
 // 📌 Helpers
