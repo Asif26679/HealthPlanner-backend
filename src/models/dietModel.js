@@ -1,53 +1,36 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const dietSchema = new Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+const foodItemSchema = mongoose.Schema({
+  id: { type: mongoose.Schema.Types.ObjectId, ref: "Food" },
+  name: { type: String, required: true },
+  type: { type: String, required: true },
+  calories: { type: Number, required: true },
+  protein: { type: Number, required: true },
+  carbs: { type: Number, required: true },
+  fats: { type: Number, required: true },
+});
+
+const mealSchema = mongoose.Schema({
+  name: { type: String, required: true },
+  items: [foodItemSchema], // ✅ Subdocument array
+  calories: Number,
+  protein: Number,
+  carbs: Number,
+  fats: Number,
+});
+
+const dietSchema = mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    title: { type: String, required: true },
+    meals: [mealSchema],
+    totalCalories: Number,
+    totalProtein: Number,
+    totalCarbs: Number,
+    totalFats: Number,
   },
-  title: {
-    type: String,
-    required: true,
-  },
-  meals: [
-    {
-      name: {
-        type: String,
-        required: true,
-      },
-      items: [
-        { type: String }
-      ],
-      calories: {
-        type: Number,
-        default: 0,
-      },
-      protein: {
-        type: Number,
-        default: 0,
-      },
-      carbs: {
-        type: Number,
-        default: 0,
-      },
-      fats: {
-        type: Number,
-        default: 0,
-      },
-    },
-  ],
-  totalCalories: {
-    type: Number,
-    default: 0,
-  },
-totalProtein: { type: Number, default: 0 },
-totalCarbs: { type: Number, default: 0 },
-totalFats: { type: Number, default: 0 }
+  { timestamps: true }
+);
 
-}, { timestamps: true });
-
-const Diet = mongoose.model("Diet", dietSchema);
-
-export default Diet;
+export default mongoose.model("Diet", dietSchema);
 

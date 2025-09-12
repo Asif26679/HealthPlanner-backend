@@ -149,25 +149,47 @@ const calculateMealTotals = (mealFoods) => {
   );
 };
 
-// Pick foods from DB
+// Pick foods from DB for a meal
 const pickFoodsForMeal = async (targetCalories, mealType) => {
-  const mealFoods = [];
   let remainingCalories = targetCalories;
 
-  // Get foods of that meal type
-  const allFoods = await Food.find({ type: mealType });
+  // Case-insensitive search for foods
+  const allFoods = await Food.find({ type: { $regex: new RegExp(`^${mealType}$`, "i") } });
 
-  while (remainingCalories > 50 && allFoods.length > 0) {
-    const randomFood = allFoods[Math.floor(Math.random() * allFoods.length)];
-    if (randomFood.calories <= remainingCalories) {
-      mealFoods.push(randomFood);
-      remainingCalories -= randomFood.calories;
+  const mealFoods = [];
+  const availableFoods = [...allFoods]; // Copy to remove selected foods
+
+  while (remainingCalories > 50 && availableFoods.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availableFoods.length);
+    const food = availableFoods[randomIndex];
+
+    if (food.calories <= remainingCalories) {
+      mealFoods.push(food);
+      remainingCalories -= food.calories;
+
+      // Remove picked food
+      availableFoods.splice(randomIndex, 1);
     } else {
-      break;
+      // Remove food if it doesn't fit remaining calories
+      availableFoods.splice(randomIndex, 1);
     }
   }
 
-  return mealFoods;
+  // Ensure at least 1 food is added
+  if (mealFoods.length === 0 && allFoods.length > 0) {
+    mealFoods.push(allFoods[Math.floor(Math.random() * allFoods.length)]);
+  }
+
+  // Return plain JS objects with needed fields
+  return mealFoods.map(f => ({
+    id: f._id,
+    name: f.name,
+    type: f.type,
+    calories: f.calories,
+    protein: f.protein,
+    carbs: f.carbs,
+    fats: f.fats,
+  }));
 };
 
 // Generate Diet
@@ -210,21 +232,21 @@ export const generateDiet = async (req, res) => {
       Snacks: 0.05,
     };
 
-    const meals = await Promise.all(
-      Object.keys(mealDistribution).map(async (mealName) => {
-        const targetCalories = Math.round(totalCalories * mealDistribution[mealName]);
-        const mealFoods = await pickFoodsForMeal(targetCalories, mealName.toLowerCase());
-        const totals = calculateMealTotals(mealFoods);
-        return {
-          name: mealName,
-          foods: mealFoods,
-          calories: totals.calories,
-          protein: totals.protein,
-          carbs: totals.carbs,
-          fats: totals.fats,
-        };
-      })
-    );
+    const meals = [];
+    for (const mealName of Object.keys(mealDistribution)) {
+      const targetCalories = Math.round(totalCalories * mealDistribution[mealName]);
+      const foods = await pickFoodsForMeal(targetCalories, mealName.toLowerCase());
+      const totals = calculateMealTotals(foods);
+
+      meals.push({
+        name: mealName,
+        items: foods,
+        calories: totals.calories,
+        protein: totals.protein,
+        carbs: totals.carbs,
+        fats: totals.fats,
+      });
+    }
 
     // 4️⃣ Save diet
     const diet = await Diet.create({
@@ -232,6 +254,9 @@ export const generateDiet = async (req, res) => {
       title: `Daily Diet Plan (${new Date().toLocaleDateString()})`,
       meals,
       totalCalories: meals.reduce((sum, meal) => sum + meal.calories, 0),
+      totalProtein: meals.reduce((sum, meal) => sum + meal.protein, 0),
+      totalCarbs: meals.reduce((sum, meal) => sum + meal.carbs, 0),
+      totalFats: meals.reduce((sum, meal) => sum + meal.fats, 0),
     });
 
     res.status(201).json(diet);
@@ -263,5 +288,26 @@ export const deleteDiet = async (req, res) => {
     res.json({ message: "Diet deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+// ✅ GET /api/foods?category=breakfast
+export const getFoods = async (req, res) => {
+  try {
+    const { category } = req.query;
+    let query = {};
+    if (category) {
+      query.type = category.toLowerCase(); // must match seed data "breakfast", "lunch", etc.
+    }
+
+    const foods = await Food.find(query);
+
+    if (!foods.length) {
+      return res.status(404).json({ message: "No foods found" });
+    }
+
+    res.status(200).json(foods);
+  } catch (err) {
+    console.error("❌ Error fetching foods:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
