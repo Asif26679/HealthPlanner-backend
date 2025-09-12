@@ -63,9 +63,7 @@ const pickFoodsForMeal = (mealType, targetCalories) => {
   return mealFoods;
 };
 
-// ------------------------
-// 📌 Controllers
-// ------------------------
+
 
 // Generate diet dynamically
 export const generateDiet = async (req, res) => {
@@ -114,6 +112,7 @@ export const generateDiet = async (req, res) => {
         totalCalories * mealDistribution[mealName]
       );
       const mealFoods = pickFoodsForMeal(mealName, targetCalories);
+      console.log(`Meal: ${mealName}, Foods:`, mealFoods); // 🐛 debug
       const totals = calculateMealTotals(mealFoods);
 
       return {
