@@ -133,7 +133,7 @@
 
 
 import Diet from "../models/dietModel.js";
-import Food from "../models/Food.js";
+import Food from "../models/foodModel.js";
 
 // Helper: calculate totals
 const calculateMealTotals = (mealFoods) => {
