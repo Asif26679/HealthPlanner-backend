@@ -112,7 +112,7 @@ export const generateDiet = async (req, res) => {
         totalCalories * mealDistribution[mealName]
       );
       const mealFoods = pickFoodsForMeal(mealName, targetCalories);
-      console.log(`Meal: ${mealName}, Foods:`, mealFoods); // 🐛 debug
+      
       const totals = calculateMealTotals(mealFoods);
 
       return {
