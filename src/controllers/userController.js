@@ -178,9 +178,8 @@ export const changePassword = async (req, res) => {
     const userId = req.user._id;
     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
+    if (!currentPassword || !newPassword)
       return res.status(400).json({ message: "Current and new password are required" });
-    }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -189,18 +188,14 @@ export const changePassword = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Current password is incorrect" });
 
-    user.password = newPassword; // will be hashed in pre-save hook
+    user.password = newPassword; // hashed in pre-save hook
     await user.save();
 
-    // ✅ fetch clean user object without password
-    const safeUser = await User.findById(user._id).select("-password");
-
-    return res.json({
-      message: "Password updated successfully",
-      user: safeUser, // ✅ return updated user
-    });
+    // ✅ Return only success, don't include sensitive info
+    res.json({ message: "Password updated successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
