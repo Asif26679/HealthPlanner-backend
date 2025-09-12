@@ -12,6 +12,7 @@ const app = express();
 const allowedOrigins = [
   /\.vercel\.app$/,
   "https://health-planner-frontend.vercel.app",
+  "https://health-planner-frontend.vercel.app/",
   "http://localhost:5173", // local dev
 ];
 
